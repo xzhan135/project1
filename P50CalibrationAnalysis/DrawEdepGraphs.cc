@@ -34,17 +34,17 @@ int main(){
 
 	TFile* f02 = new TFile("/home/xzhan135/data/P50Data/MC/Cf252-P50D-MC/Cf252-pw-2-0_DetSim-Processed.root");
 	TH1F* hnew02 = new TH1F("hnew02", "MC Energy Reconstructed", 250, 0., 5.);
-	hnew02 = (TH1F*)f02->Get("hELi1");
+	hnew02 = (TH1F*)f02->Get("hELi0");
 	hnew02->Sumw2();
 
 	TFile* f03 = new TFile("/home/xzhan135/data/P50Data/Data/Cf252-P50D-Data-S028-F016-Processed.root");
 	TH1F* hnew03 = new TH1F("hnew03", "Data Energy Reconstructed", 250, 0., 5.);
-	hnew03 = (TH1F*)f03->Get("hELi1");
+	hnew03 = (TH1F*)f03->Get("hELi0");
 	hnew03->Sumw2();	
 	
 	TFile* f04 = new TFile("/home/xzhan135/data/P50Data/Data/BKGD-P50D-Data-S029-F000-Processed.root");
 	TH1F* hnew04 = new TH1F("hnew04", "Background Data", 250, 0., 5.);
-	hnew04 = (TH1F*)f04->Get("hELi1");
+	hnew04 = (TH1F*)f04->Get("hELi0");
 	hnew04->Sumw2();	
 	//hnew04->Scale(timeScale);
 
@@ -52,27 +52,28 @@ int main(){
 	
 	ScaleHistogram(hnew04, hclone04, timeScale);
 	
-	//hnew03->Add(hclone04, -1);
+	hnew03->Add(hclone04, -1);
 
   Double_t norm = 1;
 //  hnew01->Scale(norm/hnew01->Integral(), "width");
-  hnew02->Scale(norm/hnew02->Integral(), "width");
-  hnew03->Scale(norm/hnew03->Integral(), "width");
-	hclone04->Scale(norm/hclone04->Integral(), "width");
+  hnew02->Scale(1/hnew02->Integral(), "width");
+  hnew03->Scale(1/hnew03->Integral(), "width");
+	hclone04->Scale(1/hnew04->Integral(), "width");
 
 	TCanvas *c1 = new TCanvas("c1","Compare Detector Response",20,10,700,400);
   gStyle->SetOptStat(0);
   c1->cd();
 
-  hnew02->SetTitle("P50D Cf252 at Middle, seg - 1");
+  hnew02->SetTitle("P50D Cf252 at Middle, seg - 0");
 	hnew02->GetXaxis()->SetRangeUser(0, 10.);
-	hnew02->GetYaxis()->SetRangeUser(0, 5.);
+//	hnew02->GetYaxis()->SetRangeUser(0, 5.);
   hnew02->SetLineWidth(2);
   hnew02->SetLineColor(kBlue);
   hnew02->Draw("SAME");
 	hnew03->SetLineWidth(2);
   hnew03->SetLineColor(kGreen);
   hnew03->Draw("SAME");
+	hclone04->Draw("SAME");
 	
   TLegend* l1 = new TLegend(0.75, 0.75, 0.95, 0.95);
   l1->SetFillColor(kWhite);
@@ -82,10 +83,10 @@ int main(){
   l1->AddEntry(hnew03, "Data E Reconstructedd", "l");
   l1->Draw();
 
-  c1->SaveAs("CompareDetResponseNCaptLi-2-1.pdf");
-	c1->SaveAs("CompareDetResponseNCaptLi-2-1.png");
+  c1->SaveAs("CompareDetResponseNCaptLi-2-0.pdf");
+	c1->SaveAs("CompareDetResponseNCaptLi-2-0.png");
 
-  TFile* gOutputFile = new TFile("CompareDetResponseNCaptLi-2-1.root", "RECREATE");
+  TFile* gOutputFile = new TFile("CompareDetResponseNCaptLi-2-0.root", "RECREATE");
   gOutputFile->cd();
 	TH1F* hclone02 = (TH1F*)hnew02->Clone("MC_E_Spect");
 	TH1F* hclone03 = (TH1F*)hnew03->Clone("Data_E_Spect");

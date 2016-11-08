@@ -12,8 +12,8 @@
 #include "TStyle.h"
 #include "TMath.h"
 
-double scaleLow = 0.9;
-double scaleHigh = 1.1;
+double scaleLow = 0.7;
+double scaleHigh = 1.2;
 double scaleRes = 0.001;
 double nbin_chi2 = (scaleHigh-scaleLow)/scaleRes;
 
@@ -63,34 +63,37 @@ double Chi2Value(TH1F* inputHisto, TH1F* refHisto, double startBinContent, doubl
 	for (int i = startBinNo; i<endBinNo; i++){
 		double variance = pow((inputHisto->GetBinContent(i) - refHisto->GetBinContent(i)), 2);
 		double expect = refHisto->GetBinContent(i);
-		chi2 += variance/expect;
+		chi2 += (variance/expect);
 	}
 	if (std::isinf(chi2)) chi2 = 10000;
-	return chi2;
+	return chi2/(endBinNo-startBinNo-1);
 }
 
 void AddRes(TH1F* inputHisto, TH1F* ResHist, double ResVal){
-	ResHist = (TH1F*)inputHisto->Clone("ResHist");
 	ResHist->Scale(0.0);
+	TH1F* hnew = (TH1F*)inputHisto->Clone("hnew");
+	hnew->Scale(0.0);
 
-	std::cout<<inputHisto->GetTitle()<<" have "<< ResHist->GetNbinsX() <<" bins"<<std::endl;
+	std::cout<<inputHisto->GetTitle()<<" have "<< hnew->GetNbinsX() <<" bins"<<std::endl;
 
 	TF1 *ResolutionFunc = new TF1("gausres", "gaus(0)");
 	std::cout<<"Resolution Function Created"<<std::endl;
 
-	for(int i = 0; i<inputHisto->GetNbinsX()+1; i++){
+	for(int i = 0; i<inputHisto->GetNbinsX(); i++){
 		double ResSigma = ResVal*TMath::Sqrt(inputHisto->GetBinCenter(i+1));
 		if (ResSigma > 0){
 			double ResNorm = inputHisto->GetBinContent(i+1)*inputHisto->GetBinWidth(i+1);
 
 			ResolutionFunc->SetParameters(ResNorm/(ResSigma*TMath::Sqrt(2*TMath::Pi())), inputHisto->GetBinCenter(i+1), ResSigma);
 
-			int OverBins = 4*(ResSigma/ResHist->GetBinWidth(i+1)+1);
+			int OverBins = 2*(ResSigma/inputHisto->GetBinWidth(i+1)+1);
 			for (int j=i+1-OverBins; j<i+1+OverBins; j++){
-				ResHist->AddBinContent(j, ResolutionFunc->Eval(ResHist->GetBinCenter(j)));
+				hnew->AddBinContent(j, ResolutionFunc->Eval(hnew->GetBinCenter(j)));
 			}
 		}
 	}
+	ResHist->Add(hnew);
+	delete hnew;
 }
 
 int main(int argc, char** argv){
@@ -144,22 +147,23 @@ int main(int argc, char** argv){
 	
 	std::cout<<"Finished loading input file .. \n";
 	
-	//AddRes(hnew01, hSmeared, 0.05);
+	AddRes(hnew01, hSmeared, 0.035);
 
 	for (int i = 0; i < nbin_chi2+1; i++){
 		double matchScale = scaleLow+i*scaleRes;
 		TH1F* hShift = new TH1F("hShift", "Shifted temporary histogram", 250, 0., 5.);
-		ShiftHistogram(hnew01, hShift, matchScale);
+		ShiftHistogram(hSmeared, hShift, matchScale);
 		double chi2 = Chi2Value(hnew02, hShift, startE, endE);
 		hChi2->SetBinContent(i,chi2);
-		std::cout<<"Chi2 value = "<< chi2 <<".\n";
+		//std::cout<<"Chi2 value = "<< chi2 <<".\n";
 		delete hShift;
 	}
-
+	hChi2->Sumw2();
+	
 	double bestScale = hChi2->GetBinCenter(hChi2->GetMinimumBin());
 	double bestChi2 = hChi2->GetBinContent(hChi2->GetMinimumBin());
 	std::cout<< "Best chi2 value = "<<hChi2->GetBinContent(hChi2->GetMinimumBin())<<", coresponding scale = "<< bestScale << ". \n";
-	ShiftHistogram(hnew01, hMatched, bestScale);
+	ShiftHistogram(hSmeared, hMatched, bestScale);
 
 	TCanvas* c01 = new TCanvas("c01", "Compare Shifted Histograms", 20, 10, 700, 400);
 	gStyle->SetOptStat(0);
@@ -169,6 +173,7 @@ int main(int argc, char** argv){
 	hMatched->GetXaxis()->SetRangeUser(0,2.5);
 	hMatched->SetLineColor(kRed);
 	hMatched->Draw();
+	hnew02->SetLineColor(kBlue);
 	hnew02->Draw("SAME");
 
   TLegend* l1 = new TLegend(0.7, 0.6, 0.9, 0.9);
@@ -188,7 +193,7 @@ int main(int argc, char** argv){
 	c02->cd();
 
 	hChi2->SetTitle(("#Chi^{2} vs Scale ("+analysisMode+ " at rod -" +std::to_string(calibNo)+ ", seg - " + std::to_string(segNo)+", in E range ("+ argv[4]+", "+ argv[5]+") MeV)").c_str());
-	hChi2->GetYaxis()->SetRangeUser(0, 2);
+	//hChi2->GetYaxis()->SetRangeUser(0, 2);
 	hChi2->Draw();
 
   TLegend* l2 = new TLegend(0.7, 0.8, 0.9, 0.9);
