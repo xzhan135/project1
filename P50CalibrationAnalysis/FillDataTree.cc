@@ -9,18 +9,18 @@
 #include "TCanvas.h"
 #include "TColor.h"
 
-#include "SetupDetResponseTree.hh"
+#include "SetupDataTree.hh"
 
 double PSDMin = 0.;
 double PSDMax = 0.4;
 double EMin = 0.;
-double EMax = 2.0;
+double EMax = 5;
 double ELiMin = 0.4;
 double ELiMax = 0.7;
-double ENoise = 0.2;
+double ENoise = 0.05;
 double PSDGMax = 0.2;
 double YMax = 450.;
-int nBins = 100;
+int nBins = 250;
 
 int main(int argc, char** argv){
 	if (argc < 2) std::cout<< "The input file is missing. \n";
@@ -32,9 +32,7 @@ int main(int argc, char** argv){
 	std::size_t listPos = InputFile.find(".root");
 	OutputFile.replace(listPos, 5, "-Processed.root");	
 
-	PhysPulseTree* MCpptree = new PhysPulseTree();
-	
-	MCpptree->SetupPhysPulseTree(InputFile);
+	PhysPulseTree* MCpptree = new PhysPulseTree(InputFile);
 
 	std::cout<< "Finished loading input file.. \n";
 
@@ -55,6 +53,14 @@ int main(int argc, char** argv){
   TH1F* hYGamma1 = new TH1F("hYGamma1", "Gamma-like Y Position: Top Segment; Y Position (mm); Events", nBins,  -1.*YMax, YMax);
   TH1F* hYGamma0 = new TH1F("hYGamma0", "Gamma-like Y Position: Bottom Segment; Y Position (mm); Events", nBins,  -1.*YMax, YMax);
   
+ // TH1F* hELiTot = new TH1F("hELiTot", "Li N-Cap Energy: Total; Energy (MeV); Events", nBins, EMin, EMax);
+  TH1F* hELi1 = new TH1F("hELi1", "Li N-Cap Energy: Top Segment; Energy (MeV); Events", nBins, EMin, EMax);
+  TH1F* hELi0 = new TH1F("hELi0", "Li N-Cap Energy: Bottom Segment; Energy (MeV); Events", nBins, EMin, EMax);
+
+ // TH1F* hENCapTot = new TH1F("hENCapTot", "Other N-Cap Energy: Total; Energy (MeV); Events", nBins, EMin, EMax);
+ // TH1F* hENCap1 = new TH1F("hENCap1", "Other N-Cap Energy: Top Segment; Energy (MeV); Events", nBins, EMin, EMax);
+ // TH1F* hENCap0 = new TH1F("hENCap0", "Other N-Cap Energy: Bottom Segment; Energy (MeV); Events", nBins, EMin, EMax);
+
 	int limitEntries = MCpptree->GetEntries_PP_Tree();
 	Long64_t lastEvent = 0;
 	double totEnergy;
@@ -67,12 +73,12 @@ int main(int argc, char** argv){
 
 		Long64_t Event = MCpptree->GetPPEvent();
 		float Energy = MCpptree->GetPPEnergy();
-		double PSD = MCpptree->GetPPPSD();
+		float PSD = MCpptree->GetPPPSD();
 		int Segment = MCpptree->GetPPSegment();
-		double YPos = MCpptree->GetPPY();
+		float YPos = MCpptree->GetPPY();
 
 		if (Energy > EMax && Energy < EMin) continue;
-		if (PSD > PSDMax && Energy < PSDMin) continue;
+		if (PSD > PSDMax && PSD < PSDMin) continue;
 		if (Segment != 0 && Segment != 1) continue;
 
 		if (lastEvent != Event){
@@ -91,16 +97,29 @@ int main(int argc, char** argv){
 		if (Energy < ELiMax && Energy > ELiMin) hPSDnLi->Fill(PSD);
 	
     if (Energy < ENoise) continue;
+
+		
     
     // Cut out neutron-like sources
-    if (PSD > PSDGMax) continue;
-    
-    if (Segment == 0) hEGamma0->Fill(Energy);
-    if (Segment == 0) hYGamma0->Fill(YPos);
+    if (PSD < PSDGMax) {
+    	if (Segment == 0) hEGamma0->Fill(Energy);
+    	if (Segment == 0) hYGamma0->Fill(YPos);
 
-    if (Segment == 1) hEGamma1->Fill(Energy);
-    if (Segment == 1) hYGamma1->Fill(YPos);
-    
+    	if (Segment == 1) hEGamma1->Fill(Energy);
+    	if (Segment == 1) hYGamma1->Fill(YPos);
+		}
+
+    if (PSD > PSDGMax && PSD < 0.35) {
+//			if (Energy < ELiMax && Energy > ELiMin) {
+				if (Segment == 0) hELi0->Fill(Energy);
+				if (Segment == 1) hELi1->Fill(Energy);
+	//		}
+
+    //  else {
+    //    if (Segment == 0) hENCap0->Fill(Energy);
+    //    if (Segment == 1) hENCap1->Fill(Energy);
+    //  }
+		}
   }
   
   hPSDvsE->Write();
@@ -110,6 +129,10 @@ int main(int argc, char** argv){
   hEGamma1->Write();
   hYGamma0->Write();
   hYGamma1->Write();
+	hELi0->Write();
+	hELi1->Write();
+	//hENCap0->Write();
+	//hENCap1->Write();
   
   gOutputFile->Write();
   gOutputFile->Close();

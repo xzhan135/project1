@@ -1,5 +1,5 @@
-#ifndef SETUPDETRESPONSETREE_HH
-#define SETUPDETRESPONSETREE_HH
+#ifndef SETUPDATATREE_HH
+#define SETUPDATATREE_HH
 
 #include <iostream>
 #include <fstream>
@@ -12,15 +12,13 @@
 class PhysPulseTree {
 
 public:
-	PhysPulseTree();
-
-	void SetupPhysPulseTree(std::string);
+	PhysPulseTree(std::string);
 
 	int GetEntries_PP_Tree();
 
 	int GetEntry_PP_Tree(int);
 
-	ULong64_t GetPPEvent();
+	Long64_t GetPPEvent();
 
 	Int_t GetPPSegment();
 
@@ -28,34 +26,34 @@ public:
 
 	Double_t GetPPTime();
 
-	Double_t GetPPdT();
+	Float_t GetPPdT();
 
 	Double_t GetPPPE(int);
 
-	Double_t GetPPY();
+	Float_t GetPPY();
 
-	Double_t GetPPPSD();
+	Float_t GetPPPSD();
 
 	Int_t GetPPPID();
 
 protected: 
 	TChain* gPhysPulse_Tree = NULL;
 
-	ULong64_t gPhysPulse_Event = 0;
+	Long64_t gPhysPulse_Event = 0;
 
 	Int_t gPhysPulse_Segment = 0;
 
-	Double_t gPhysPulse_Energy = 0;
+	Float_t gPhysPulse_Energy = 0;
 
 	Double_t gPhysPulse_Time = 0;
 
-	Double_t gPhysPulse_dT = 0;
+	Float_t gPhysPulse_dT = 0;
 
 	Double_t gPhysPulse_PE[2] = {0.};
 
-	Double_t gPhysPulse_Y = 0;
+	Float_t gPhysPulse_Y = 0;
 
-	Double_t gPhysPulse_PSD = 0;
+	Float_t gPhysPulse_PSD = 0;
 
 	Int_t gPhysPulse_PID = 0;
 };

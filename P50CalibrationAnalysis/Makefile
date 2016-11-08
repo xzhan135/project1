@@ -17,7 +17,7 @@ ODIR = obj/
 LIBDIR = lib/
 LIBEXP = $(LIBDIR)/libMCANA.a
 
-OBJS = $(addprefix $(ODIR)/, SetupDetResponseTree.o)
+OBJS = $(addprefix $(ODIR)/, DetResponse.o SetupDataTree.o)
 
 $(LIBEXP): $(OBJS)
 	ar rs $@ $(OBJS)
