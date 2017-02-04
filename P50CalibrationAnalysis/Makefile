@@ -11,7 +11,7 @@ endif
 CXXFLAGS = --std=c++11 -fPIC `root-config --cflags` -Wall -I. -I/include \
 	-I/$(PG4_CODE)/include/Output/ -I/$(PG4_CODE)/include/EventGen/ \
 	-I${G4LEDATA}/../../../../include/Geant4/
-LDFLAGS = `root-config --libs` -L./ -L${PG4_BUILD}/lib/ -lEventLib
+LDFLAGS = `root-config --libs` -L./ -L${PG4_ROOT}/lib/ -lEventLib
 
 ODIR = obj/
 LIBDIR = lib/

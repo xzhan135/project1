@@ -8,9 +8,9 @@
 #include "TFile.h"
 #include "TChain.h"
 #include "TString.h"
+#include "TVectorD.h"
 
 class PhysPulseTree {
-
 public:
 	PhysPulseTree(std::string);
 
@@ -35,6 +35,10 @@ public:
 	Float_t GetPPPSD();
 
 	Int_t GetPPPID();
+	
+	Double_t gPhysPulse_RunTime;
+	
+	Double_t gPhysPulse_AbsTime;
 
 protected: 
 	TChain* gPhysPulse_Tree = NULL;

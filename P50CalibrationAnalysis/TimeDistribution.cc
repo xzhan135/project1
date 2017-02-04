@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -33,7 +34,6 @@ int main(int argc, char** argv){
 	std::size_t listPos = fileList.find(".list");
 	OutputFile.replace(listPos, 5, "-Processed.root");	
 	std::cout<<"check"<<std::endl;
-	PhysPulseTree* MCpptree = new PhysPulseTree(fileList);
 
 	std::cout<< "Finished loading input file.. \n";
 
@@ -59,6 +59,8 @@ int main(int argc, char** argv){
  // TH1F* hELiTot = new TH1F("hELiTot", "Li N-Cap Energy: Total; Energy (MeV); Events", nBins, EMin, EMax);
   TH1F* hELi1 = new TH1F("hELi1", "Li N-Cap Energy: Top Segment; Energy (MeV); Events", nBins, EMin, EMax);
   TH1F* hELi0 = new TH1F("hELi0", "Li N-Cap Energy: Bottom Segment; Energy (MeV); Events", nBins, EMin, EMax);
+	TH1F* hTime0 = new TH1F("hTime0", "Time distribution of neutron recoil", 200, -200, 200);
+	TH1F* hTime1 = new TH1F("hTime1", "Time distribution of neutron recoil", 200, -200, 200);
 
  // TH1F* hENCapTot = new TH1F("hENCapTot", "Other N-Cap Energy: Total; Energy (MeV); Events", nBins, EMin, EMax);
  // TH1F* hENCap1 = new TH1F("hENCap1", "Other N-Cap Energy: Top Segment; Energy (MeV); Events", nBins, EMin, EMax);
@@ -96,7 +98,6 @@ int main(int argc, char** argv){
 		totEnergy += Energy;
 		
 
-		if (ev < 25) std::cout << "Reading event No. " << Event << ", energy: " << Energy<< " MeV, PSD: " << PSD << ", Segment: " << Segment << ", Y: " << YPos << " \n";
 
 		if (Segment == 0) hPSDvsE0->Fill(Energy, PSD);
 		if (Segment == 1) hPSDvsE1->Fill(Energy, PSD);
@@ -105,7 +106,7 @@ int main(int argc, char** argv){
 	
     if (Energy < ENoise) continue;
   }
-
+	int haha = 0; 
 	for (int ev = 0; ev < limitEntries; ev++){
 		
 		MCpptree->GetEntry_PP_Tree(ev);
@@ -113,6 +114,7 @@ int main(int argc, char** argv){
 		Long64_t Event = MCpptree->GetPPEvent();
 		float Energy = MCpptree->GetPPEnergy();
 		float PSD = MCpptree->GetPPPSD();
+		double Time = MCpptree->GetPPTime();
 		int Segment = MCpptree->GetPPSegment();
 		float YPos = MCpptree->GetPPY();
 
@@ -135,7 +137,6 @@ int main(int argc, char** argv){
 		double PSDGMax1 = hPSDnLi1->GetBinCenter(hPSDnLi1->GetMinimumBin());
 		hPSDnLi1->GetXaxis()->SetRangeUser(PSDMin, PSDMax);
 
-		if (ev < 1) std::cout << PSDGMax0 << "		"<<PSDGMax1 <<std::endl;
     // Cut out neutron-like sources
     	if (Segment == 0 && PSD < PSDGMax0) hEGamma0->Fill(Energy);
     	if (Segment == 0 && PSD < PSDGMax0) hYGamma0->Fill(YPos);
@@ -143,18 +144,54 @@ int main(int argc, char** argv){
     	if (Segment == 1 && PSD < PSDGMax1) hEGamma1->Fill(Energy);
     	if (Segment == 1 && PSD < PSDGMax1) hYGamma1->Fill(YPos);
 
+// Fill the time distribution
+		// Set PSD upper limit.		
     if (PSD < 0.35) {
-//			if (Energy < ELiMax && Energy > ELiMin) {
-				if (Segment == 0 && PSD > PSDGMax0) hELi0->Fill(Energy);
-				if (Segment == 1 && PSD > PSDGMax1) hELi1->Fill(Energy);
-	//		}
+			// Set energy threshold for recoil proton events.
+			if (Energy < 12 && Energy > 1){
+				// Set volume specifically to 0, and PSD to be nuclear recoil.
+				if (Segment == 0 && PSD > PSDGMax0)	{		
+						double StartTime = Time;																				//Find time of the nuclear recoil;
+						double StartPos = YPos;																				//Find position of the nuclear recoil;
+						if (std::abs(StartPos)>1750) continue;
+						//std::cout << "Reading event No. " << Event << ", energy: " << Energy<< " MeV, PSD: " << PSD << ", Segment: " << Segment << ", Y: " << YPos << " \n";
+						// Re-read through the file to catch neutron candidates.
+						haha++;
+						int counti0 = 0;
+						for (int evi; evi < limitEntries; evi++){
+							MCpptreei0->GetEntry_PP_Tree(evi);
 
-    //  else {
-    //    if (Segment == 0) hENCap0->Fill(Energy);
-    //    if (Segment == 1) hENCap1->Fill(Energy);
-    //  }
+							Long64_t Eventi0 = MCpptreei0->GetPPEvent();
+							float Energyi0 = MCpptreei0->GetPPEnergy();
+							float PSDi0 = MCpptreei0->GetPPPSD();
+							double Timei0 = MCpptreei0->GetPPTime();
+							int Segmenti0 = MCpptreei0->GetPPSegment();
+							float YPosi0 = MCpptreei0->GetPPY();
+
+							if (Eventi0 == Event) continue;
+							//std::cout<<"check1"<<std::endl;
+							if (Segmenti0 != Segment) continue;
+							//std::cout<<"check2"<<std::endl;
+							if (PSDi0 > PSDGMax0) continue;
+							//std::cout<<"check3"<<std::endl;
+							if (std::abs(YPosi0-YPos) > 66.66) continue;
+							//std::cout<<"check4"<<std::endl;
+							if (std::abs(Timei0-Time) > 200000000) continue;
+							//std::cout<<"check5"<<std::endl;
+							counti0 ++;
+							
+							hTime0->Fill((Timei0-Time)/1000000);		
+							
+						}
+						std::cout<<counti0<<std::endl;
+					}
+				if (Segment == 1 && PSD > PSDGMax1) hELi1->Fill(Energy);
+			}
+
 		}
   }
+	
+	std::cout<<haha<<std::endl;
 	hEGammaTot->Sumw2();
 	hEGamma0->Sumw2();
 	hEGamma1->Sumw2();
@@ -178,6 +215,7 @@ int main(int argc, char** argv){
   hYGamma1->Write();
 	hELi0->Write();
 	hELi1->Write();
+	hTime0->Write();
 	//hENCap0->Write();
 	//hENCap1->Write();
   

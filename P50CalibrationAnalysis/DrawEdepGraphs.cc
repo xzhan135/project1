@@ -12,7 +12,7 @@
 #include "TLegend.h"
 #include "TStyle.h"
 
-double timeScale = 1./60.;
+double timeScale = 1./6.;
 
 void ScaleHistogram(TH1F* inputHisto, TH1F* outputHisto, double scale){
 	outputHisto->Scale(0.);
@@ -24,47 +24,61 @@ void ScaleHistogram(TH1F* inputHisto, TH1F* outputHisto, double scale){
 	std::cout<<scale<<std::endl;
 }
 
-int main(){
+int main(int argc, char** argv){
+  if (argc < 2) std::cout<< "The input file is missing. \n";
 
-//	TFile* f01 = new TFile("/home/xzhan135/data/P50Data/MC/Cf252-P50D-MC/Cf252-pw-2-1_Det_E.root");
-//  f01->ls();
+  std::string fileList = argv[1];
+  std::string InputFile;
+  std::cout<<"Reading the processed data and MC file: "<< fileList <<".."<<std::endl;
 
-//	TH1F* hnew01 = new TH1F("hnew01", "MC Energy Deposition", 250, 0., 5.);
-//	hnew01 = (TH1F*)f01->Get("E_dep_0");
+  std::string OutputFile = (fileList);
 
-	TFile* f02 = new TFile("/home/xzhan135/data/P50Data/MC/Cf252-P50D-MC/Cf252-pw-2-0_DetSim-Processed.root");
-	TH1F* hnew02 = new TH1F("hnew02", "MC Energy Reconstructed", 250, 0., 5.);
-	hnew02 = (TH1F*)f02->Get("hELi0");
-	hnew02->Sumw2();
+  std::size_t listPos = fileList.find(".list");
+  OutputFile.replace(listPos, 5, ".root");
+  std::cout<<"check"<<std::endl;
 
-	TFile* f03 = new TFile("/home/xzhan135/data/P50Data/Data/Cf252-P50D-Data-S028-F016-Processed.root");
-	TH1F* hnew03 = new TH1F("hnew03", "Data Energy Reconstructed", 250, 0., 5.);
-	hnew03 = (TH1F*)f03->Get("hELi0");
-	hnew03->Sumw2();	
+	std::ifstream inputList(fileList.c_str());
+	std::string inputFile;
+	std::vector<TFile*> vFiles;
+
+	while(inputList >> inputFile){
+		if (inputList.fail()) break;
+		vFiles.push_back(new TFile(inputFile.c_str()));
+	}
 	
-	TFile* f04 = new TFile("/home/xzhan135/data/P50Data/Data/BKGD-P50D-Data-S029-F000-Processed.root");
-	TH1F* hnew04 = new TH1F("hnew04", "Background Data", 250, 0., 5.);
-	hnew04 = (TH1F*)f04->Get("hELi0");
-	hnew04->Sumw2();	
-	//hnew04->Scale(timeScale);
-
-	TH1F* hclone04 = (TH1F*)hnew04->Clone("BKGD");
+	vFiles.at(0)->ls();
+	TH1F* hMC0 = new TH1F("hMC0", "MC Energy Deposition Seg 0", 500, 0., 5.);
+	hMC0 = (TH1F*)vFiles.at(0)->Get("E_dep_0");
+	TH1F* hMC1 = new TH1F("hMC1", "MC Energy Deposition Seg 1", 500, 0., 5.);
+	hMC1 = (TH1F*)vFiles.at(0)->Get("E_dep_1");
 	
-	ScaleHistogram(hnew04, hclone04, timeScale);
-	
-	hnew03->Add(hclone04, -1);
+	vFiles.at(1)->ls();
+	TH1F* hData0 = new TH1F("hData0", "Data Energy Deposition Seg 0", 500, 0., 5.);
+	hData0 = (TH1F*)vFiles.at(1)->Get("hEGamma0");
+	TH1F* hLi0 = (TH1F*)vFiles.at(1)->Get("hELi0");
+	TH1F* hData1 = new TH1F("hData1", "Data Energy Deposition Seg 1", 500, 0., 5.);
+	hData1 = (TH1F*)vFiles.at(1)->Get("hEGamma1");
+	TH1F* hLi1 = (TH1F*)vFiles.at(1)->Get("hELi1");
 
-  Double_t norm = 1;
-//  hnew01->Scale(norm/hnew01->Integral(), "width");
-  hnew02->Scale(1/hnew02->Integral(), "width");
-  hnew03->Scale(1/hnew03->Integral(), "width");
-	hclone04->Scale(1/hnew04->Integral(), "width");
+	vFiles.at(2)->ls();
+	TH1F* hBKGD0 = new TH1F("hBKGD0", "BKGD Energy Deposition Seg 0", 500, 0., 5.);
+	hBKGD0 = (TH1F*)vFiles.at(2)->Get("hEGamma0");
+	TH1F* hLiBKGD0 = (TH1F*)vFiles.at(2)->Get("hELi0");
+	TH1F* hBKGD1 = new TH1F("hBKGD1", "BKGD Energy Deposition Seg 1", 500, 0., 5.);
+	hBKGD1 = (TH1F*)vFiles.at(2)->Get("hEGamma1");
+	TH1F* hLiBKGD1 = (TH1F*)vFiles.at(2)->Get("hELi1");
+	std::cout<<"Check 2"<<std::endl;
 
+	hData0->Add(hBKGD0, -1);
+	hData1->Add(hBKGD1, -1);
+	hLi0->Add(hLiBKGD0, -1);
+	hLi1->Add(hLiBKGD1, -1);
+/*
 	TCanvas *c1 = new TCanvas("c1","Compare Detector Response",20,10,700,400);
   gStyle->SetOptStat(0);
   c1->cd();
 
-  hnew02->SetTitle("P50D Cf252 at Middle, seg - 0");
+  hnew02->SetTitle("P50D Na22 at Middle, seg - 0");
 	hnew02->GetXaxis()->SetRangeUser(0, 10.);
 //	hnew02->GetYaxis()->SetRangeUser(0, 5.);
   hnew02->SetLineWidth(2);
@@ -83,16 +97,31 @@ int main(){
   l1->AddEntry(hnew03, "Data E Reconstructedd", "l");
   l1->Draw();
 
-  c1->SaveAs("CompareDetResponseNCaptLi-2-0.pdf");
-	c1->SaveAs("CompareDetResponseNCaptLi-2-0.png");
+  c1->SaveAs("CompareDetResponseNa22-2-0.pdf");
+	c1->SaveAs("CompareDetResponseNa22-2-0.png");
+*/
 
-  TFile* gOutputFile = new TFile("CompareDetResponseNCaptLi-2-0.root", "RECREATE");
+ 	TFile* gOutputFile = new TFile(OutputFile.c_str(), "RECREATE");
   gOutputFile->cd();
-	TH1F* hclone02 = (TH1F*)hnew02->Clone("MC_E_Spect");
-	TH1F* hclone03 = (TH1F*)hnew03->Clone("Data_E_Spect");
-  hclone02->Write();
-  hclone03->Write();
-	hclone04->Write();
+	std::cout<<"check iii"<<std::endl;
+	TH1F* hclone0 = (TH1F*)hMC0->Clone("MC_E_Spect_0");
+	TH1F* hclone1 = (TH1F*)hData0->Clone("Data_E_Spect_0");
+	std::cout<<"Check IV"<<std::endl;
+	TH1F* hclone2 = (TH1F*)hBKGD0->Clone("BKGD_E_Spect_0");
+	TH1F* hclone3 = (TH1F*)hMC1->Clone("MC_E_Spect_1");
+	TH1F* hclone4 = (TH1F*)hData1->Clone("Data_E_Spect_1");
+	TH1F* hclone5 = (TH1F*)hBKGD1->Clone("BKGD_E_Spect_1");
+	TH1F* hclone6 = (TH1F*)hLi0->Clone("Data_Li_0");
+	TH1F* hclone7 = (TH1F*)hLi1->Clone("Data_Li_1");
+	hclone0->Write();
+	hclone1->Write();
+	hclone2->Write();
+	hclone3->Write();
+	hclone4->Write();
+	hclone5->Write();
+	hclone6->Write();
+	hclone7->Write();
+	gOutputFile->Write();
   gOutputFile->Close();
 
   return 0;
