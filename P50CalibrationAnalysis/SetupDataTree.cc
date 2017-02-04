@@ -1,27 +1,12 @@
 #include "SetupDataTree.hh"
 
-PhysPulseTree::PhysPulseTree(std::string fileList){	
+PhysPulseTree::PhysPulseTree(std::string inputFile){
 	gPhysPulse_Tree=new TChain("PhysPulse");
-	
+
 	std::ifstream inputList(fileList.c_str());
 
-	std::string inputFile;
-	while (inputList >> inputFile){
-		if (inputList.fail()) break;
-		if (inputFile[0] == '#') {
-			continue;
-		}
-		if(inputFile.find("break") != std::string::npos) break;
-		gPhysPulse_Tree->Add(inputFile.c_str());
+	gPhysPulse_Tree->Add(inputFile.c_str());
 
-		TFile* gInputFile = TFile::Open(inputFile.c_str());
-		TVectorD* vRunTime = (TVectorD*)gInputFile->Get("runtime"); 	
-		gPhysPulse_RunTime += (*vRunTime)[0];
-	}
-	
-		
-	inputList.close();
-	
 	gPhysPulse_Tree->SetBranchAddress("evt", &gPhysPulse_Event);
 	gPhysPulse_Tree->SetBranchAddress("seg", &gPhysPulse_Segment);
 	gPhysPulse_Tree->SetBranchAddress("E", &gPhysPulse_Energy);
