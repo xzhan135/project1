@@ -3,8 +3,6 @@
 PhysPulseTree::PhysPulseTree(std::string inputFile){
 	gPhysPulse_Tree=new TChain("PhysPulse");
 
-	std::ifstream inputList(fileList.c_str());
-
 	gPhysPulse_Tree->Add(inputFile.c_str());
 
 	gPhysPulse_Tree->SetBranchAddress("evt", &gPhysPulse_Event);

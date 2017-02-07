@@ -29,6 +29,7 @@ int main(int argc, char** argv){
 	if (argc < 2) std::cout<< "The input file is missing. \n";
 
 	std::string fileList = argv[1];
+  std::ifstream inputList(fileList.c_str());
 	std::string InputFile;
   std::cout<<"Reading the data file: "<< fileList <<".."<<std::endl;
 
@@ -39,7 +40,6 @@ int main(int argc, char** argv){
 
 	std::cout<< "Finished loading input file.. \n";
 
-	TFile* gOutputFile = TFile::Open(OutputFile.c_str(), "RECREATE");
 
   // Make a PSD vs Energy histogram
   TH2F* hPSDvsE0 = new TH2F("hPSDvsE0", ";Energy(MeV);PSD", nBins, EMin, EMax, nBins, PSDMin, PSDMax);
@@ -61,22 +61,23 @@ int main(int argc, char** argv){
  // TH1F* hELiTot = new TH1F("hELiTot", "Li N-Cap Energy: Total; Energy (MeV); Events", nBins, EMin, EMax);
   TH1F* hELi1 = new TH1F("hELi1", "Li N-Cap Energy: Top Segment; Energy (MeV); Events", nBins, EMin, EMax);
   TH1F* hELi0 = new TH1F("hELi0", "Li N-Cap Energy: Bottom Segment; Energy (MeV); Events", nBins, EMin, EMax);
-	TH1F* hTime0 = new TH1F("hTime0", "Time distribution of neutron recoil", 200, -200, 200);
+	TH1F* hTime0 = new TH1F("hTime0", "Time distribution of neutron recoil", 500, -100, 100);
 	TH1F* hTime1 = new TH1F("hTime1", "Time distribution of neutron recoil", 200, -200, 200);
 
+	//TH1F* hEB0 =new TH1F("hELi1", "Li N-Cap Energy: Top Segment; Energy (MeV); Events", nBins*2, EMin*2, EMax*2);
  // TH1F* hENCapTot = new TH1F("hENCapTot", "Other N-Cap Energy: Total; Energy (MeV); Events", nBins, EMin, EMax);
  // TH1F* hENCap1 = new TH1F("hENCap1", "Other N-Cap Energy: Top Segment; Energy (MeV); Events", nBins, EMin, EMax);
  // TH1F* hENCap0 = new TH1F("hENCap0", "Other N-Cap Energy: Bottom Segment; Energy (MeV); Events", nBins, EMin, EMax);
 
-	while (fileList >> InputFile) {
-		if (fileList.fail()) break;
+	while (inputList >> InputFile) {
+		if (inputList.fail()) break;
 		if (InputFile[0] == '#') {
 			continue;
 		}
 		if(InputFile.find("break") != std::string::npos) break;
 		std::cout<<"Reading input file: "<< InputFile << ".." << std::endl;
 
-		PhysPulseTree* MCpptree = new MCpptree(InputFile);
+		PhysPulseTree* MCpptree = new PhysPulseTree(InputFile);
 
 		int limitEntries = MCpptree->GetEntries_PP_Tree();
 		Long64_t lastEvent = 0;
@@ -152,7 +153,6 @@ int main(int argc, char** argv){
 	    if (Segment == 1 && PSD < PSDGMax1) hEGamma1->Fill(Energy);
 	    if (Segment == 1 && PSD < PSDGMax1) hYGamma1->Fill(YPos);
 
-			PhysPulseTree* MCpptreei0 = new MCpptree(InputFile);
 
 			// Fill the time distribution
 			// Set PSD upper limit.
@@ -163,37 +163,53 @@ int main(int argc, char** argv){
 					if (Segment == 0 && PSD > PSDGMax0)	{
 							double StartTime = Time;																				//Find time of the nuclear recoil;
 							double StartPos = YPos;																				//Find position of the nuclear recoil;
-							if (std::abs(StartPos)>1750) continue;
-							//std::cout << "Reading event No. " << Event << ", energy: " << Energy<< " MeV, PSD: " << PSD << ", Segment: " << Segment << ", Y: " << YPos << " \n";
-							// Re-read through the file to catch neutron candidates.
-							int counti0 = 0;
-							for (int evi; evi < limitEntries; evi++){
-								MCpptreei0->GetEntry_PP_Tree(evi);
-
-								Long64_t Eventi0 = MCpptreei0->GetPPEvent();
-								float Energyi0 = MCpptreei0->GetPPEnergy();
-								float PSDi0 = MCpptreei0->GetPPPSD();
-								double Timei0 = MCpptreei0->GetPPTime();
-								int Segmenti0 = MCpptreei0->GetPPSegment();
-								float YPosi0 = MCpptreei0->GetPPY();
-
-								//std::cout<<"check1"<<std::endl;
-								if (Segmenti0 != Segment) continue;
-								//std::cout<<"check2"<<std::endl;
-								if (PSDi0 > PSDGMax0) continue;
-								//std::cout<<"check3"<<std::endl;
-								if (std::abs(YPosi0-YPos) > 66.66) continue;
-								//std::cout<<"check4"<<std::endl;
-								if (std::abs(Timei0-Time) > 200000000 && std::abs(Timei0-Time) == 0) continue;
-								//std::cout<<"check5"<<std::endl;
-								counti0 ++;
-
-								hTime0->Fill((Timei0-Time)/1000000);
-
+							if (std::abs(StartPos)>455) continue;
+							std::cout << "Reading entry: "<<ev <<", event No. " << Event << ", energy: " << Energy<< " MeV, PSD: " << PSD << ", Segment: " << Segment << ", Y: " << YPos <<", Time: " << Time<< " \n";
+							int formerEvt = ev-1;
+							int latterEvt = ev+1;
+							MCpptree->GetEntry_PP_Tree(formerEvt);
+							double formerTime = MCpptree->GetPPTime();
+							//std::cout<<"Former events to entry: " <<formerEvt <<", event: "<< MCpptree->GetPPEvent() <<std::endl;
+							int formerCount = 0;
+							while (formerEvt>=0 && (formerTime-StartTime)<0 && (formerTime-StartTime)>-200000) {
+								double formerPos = MCpptree->GetPPY();
+								double formerPSD = MCpptree->GetPPPSD();
+								int formerSeg = MCpptree->GetPPSegment();
+								double formerE = MCpptree->GetPPEnergy();
+								std::cout << "Reading entry: "<<formerEvt <<", event No. " << MCpptree->GetPPEvent() << ", energy: " << formerE << " MeV, PSD: " << formerPSD << ", Segment: " << (formerSeg) << ", Y: " << std::abs(StartPos-formerPos) <<", Time: " << formerTime<< ", Time Diff: " << ((formerTime-StartTime)/1000) <<" \n";
+								if (formerSeg == Segment && std::abs(StartPos-formerPos) < 50 && formerPSD > 0 && formerPSD < PSDGMax0 && formerE > ENoise && formerE<10 ) {
+									hTime0->Fill((formerTime-StartTime)/1000);
+									formerCount += 1;
+								}
+								
+									formerEvt = formerEvt-1;
+									MCpptree->GetEntry_PP_Tree(formerEvt);
+									formerTime = MCpptree->GetPPTime();
 							}
-							std::cout<<counti0<<std::endl;
-						}
-					if (Segment == 1 && PSD > PSDGMax1) hELi1->Fill(Energy);
+							std::cout<<"Former event number: "<< formerCount << std::endl;	
+
+							MCpptree->GetEntry_PP_Tree(latterEvt);
+							double latterTime = MCpptree->GetPPTime();
+							//std::cout<<"Latter events:"<<std::endl;
+							int latterCount = 0;
+							while ((latterTime-StartTime)>0 && (latterTime-StartTime)<200000) {
+								double latterPos = MCpptree->GetPPY();
+								double latterPSD = MCpptree->GetPPPSD();
+								int latterSeg = MCpptree->GetPPSegment();
+								double latterE = MCpptree->GetPPEnergy();
+								std::cout << "Reading entry: "<<latterEvt <<", event No. " << MCpptree->GetPPEvent() << ", energy: " << latterE << " MeV, PSD: " << latterPSD << ", Segment: " << (latterSeg) << ", Y: " << std::abs(StartPos-latterPos) <<", Time: " << latterTime<< ", Time Diff: " << ((latterTime-StartTime)/1000) <<" \n";
+								if (latterSeg == Segment && std::abs(StartPos-latterPos) < 50 && latterPSD > 0 && latterPSD < PSDGMax0 && latterE > ENoise && latterE< 10)  {
+									hTime0->Fill((latterTime-StartTime)/1000);
+									latterCount += 1;
+								}
+									latterEvt = latterEvt+1;
+									MCpptree->GetEntry_PP_Tree(latterEvt);
+									latterTime = MCpptree->GetPPTime();
+							}
+							std::cout<<"Latter event number: "<< latterCount << std::endl;	
+							
+					//if (Segment == 1 && PSD > PSDGMax1) hELi1->Fill(Energy);
+					}
 				}
 			}
 	  }
@@ -201,10 +217,12 @@ int main(int argc, char** argv){
 		TFile* gInputFile = TFile::Open(InputFile.c_str());
 		TVectorD* vRunTime = (TVectorD*)gInputFile->Get("runtime");
 		PhysPulseRunTime += (*vRunTime)[0];
+		delete MCpptree;
 	}
 
 	std::cout << "Total run time is "<< PhysPulseRunTime << "s.. \n";
 
+	TFile* gOutputFile = TFile::Open(OutputFile.c_str(), "RECREATE");
 	hEGammaTot->Sumw2();
 	hEGamma0->Sumw2();
 	hEGamma1->Sumw2();

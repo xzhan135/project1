@@ -27,6 +27,7 @@ int main(int argc, char** argv){
 	if (argc < 2) std::cout<< "The input file is missing. \n";
 
 	std::string fileList = argv[1];
+  std::ifstream inputList(fileList.c_str());
 	std::string InputFile;
   std::cout<<"Reading the data file: "<< fileList <<".."<<std::endl;
 
@@ -37,7 +38,6 @@ int main(int argc, char** argv){
 
 	std::cout<< "Finished loading input file.. \n";
 
-	TFile* gOutputFile = TFile::Open(OutputFile.c_str(), "RECREATE");
 
   // Make a PSD vs Energy histogram
   TH2F* hPSDvsE0 = new TH2F("hPSDvsE0", ";Energy(MeV);PSD", nBins, EMin, EMax, nBins, PSDMin, PSDMax);
@@ -63,15 +63,15 @@ int main(int argc, char** argv){
  // TH1F* hENCapTot = new TH1F("hENCapTot", "Other N-Cap Energy: Total; Energy (MeV); Events", nBins, EMin, EMax);
  // TH1F* hENCap1 = new TH1F("hENCap1", "Other N-Cap Energy: Top Segment; Energy (MeV); Events", nBins, EMin, EMax);
  // TH1F* hENCap0 = new TH1F("hENCap0", "Other N-Cap Energy: Bottom Segment; Energy (MeV); Events", nBins, EMin, EMax);
- while (fileList >> InputFile) {
-	 if (fileList.fail()) break;
+ while (inputList >> InputFile) {
+	 if (inputList.fail()) break;
 	 if (InputFile[0] == '#') {
 		 continue;
 	 }
 	 if(InputFile.find("break") != std::string::npos) break;
 	 std::cout<<"Reading input file: "<< InputFile << ".." << std::endl;
 
-	 PhysPulseTree* MCpptree = new MCpptree(InputFile);
+	 PhysPulseTree* MCpptree = new PhysPulseTree(InputFile);
 
 	 int limitEntries = MCpptree->GetEntries_PP_Tree();
 	 Long64_t lastEvent = 0;
@@ -162,6 +162,7 @@ int main(int argc, char** argv){
 	 PhysPulseRunTime += (*vRunTime)[0];
  }
  std::cout << "Total run time is "<< PhysPulseRunTime << "s.. \n";
+	TFile* gOutputFile = TFile::Open(OutputFile.c_str(), "RECREATE");
 
 	hEGammaTot->Sumw2();
 	hEGamma0->Sumw2();
@@ -191,6 +192,8 @@ int main(int argc, char** argv){
 
   gOutputFile->Write();
   gOutputFile->Close();
+
+	std::cout<<"done."<<std::endl;
 
 	return 0;
 }
