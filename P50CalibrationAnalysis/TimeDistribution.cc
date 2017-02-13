@@ -35,7 +35,7 @@ int main(int argc, char** argv){
 
 	std::string OutputFile = (fileList);
 	std::size_t listPos = fileList.find(".list");
-	OutputFile.replace(listPos, 5, "-Processed.root");
+	OutputFile.replace(listPos, 5, "-Processed-300us.root");
 	std::cout<<"check"<<std::endl;
 
 	std::cout<< "Finished loading input file.. \n";
@@ -61,8 +61,8 @@ int main(int argc, char** argv){
  // TH1F* hELiTot = new TH1F("hELiTot", "Li N-Cap Energy: Total; Energy (MeV); Events", nBins, EMin, EMax);
   TH1F* hELi1 = new TH1F("hELi1", "Li N-Cap Energy: Top Segment; Energy (MeV); Events", nBins, EMin, EMax);
   TH1F* hELi0 = new TH1F("hELi0", "Li N-Cap Energy: Bottom Segment; Energy (MeV); Events", nBins, EMin, EMax);
-	TH1F* hTime0 = new TH1F("hTime0", "Time distribution of neutron recoil", 500, -100, 100);
-	TH1F* hTime1 = new TH1F("hTime1", "Time distribution of neutron recoil", 200, -200, 200);
+	TH1F* hTime0 = new TH1F("hTime0", "Time distribution of neutron recoil", 600, -300, 300);
+	TH1F* hTime1 = new TH1F("hTime1", "Time distribution of neutron recoil", 600, -300, 300);
 
 	//TH1F* hEB0 =new TH1F("hELi1", "Li N-Cap Energy: Top Segment; Energy (MeV); Events", nBins*2, EMin*2, EMax*2);
  // TH1F* hENCapTot = new TH1F("hENCapTot", "Other N-Cap Energy: Total; Energy (MeV); Events", nBins, EMin, EMax);
@@ -93,7 +93,6 @@ int main(int argc, char** argv){
 			float Energy = MCpptree->GetPPEnergy();
 			float PSD = MCpptree->GetPPPSD();
 			int Segment = MCpptree->GetPPSegment();
-			float YPos = MCpptree->GetPPY();
 
 			if (Energy > EMax && Energy < EMin) continue;
 			if (PSD > PSDMax && PSD < PSDMin) continue;
@@ -147,11 +146,11 @@ int main(int argc, char** argv){
 			hPSDnLi1->GetXaxis()->SetRangeUser(PSDMin, PSDMax);
 
 	    // Cut out neutron-like sources
-	    if (Segment == 0 && PSD < PSDGMax0) hEGamma0->Fill(Energy);
-	    if (Segment == 0 && PSD < PSDGMax0) hYGamma0->Fill(YPos);
+	//    if (Segment == 0 && PSD < PSDGMax0) hEGamma0->Fill(Energy);
+	//    if (Segment == 0 && PSD < PSDGMax0) hYGamma0->Fill(YPos);
 
-	    if (Segment == 1 && PSD < PSDGMax1) hEGamma1->Fill(Energy);
-	    if (Segment == 1 && PSD < PSDGMax1) hYGamma1->Fill(YPos);
+	//    if (Segment == 1 && PSD < PSDGMax1) hEGamma1->Fill(Energy);
+	//    if (Segment == 1 && PSD < PSDGMax1) hYGamma1->Fill(YPos);
 
 
 			// Fill the time distribution
@@ -164,19 +163,19 @@ int main(int argc, char** argv){
 							double StartTime = Time;																				//Find time of the nuclear recoil;
 							double StartPos = YPos;																				//Find position of the nuclear recoil;
 							if (std::abs(StartPos)>455) continue;
-							std::cout << "Reading entry: "<<ev <<", event No. " << Event << ", energy: " << Energy<< " MeV, PSD: " << PSD << ", Segment: " << Segment << ", Y: " << YPos <<", Time: " << Time<< " \n";
+							//std::cout << "Reading entry: "<<ev <<", event No. " << Event << ", energy: " << Energy<< " MeV, PSD: " << PSD << ", Segment: " << Segment << ", Y: " << YPos <<", Time: " << Time<< " \n";
 							int formerEvt = ev-1;
 							int latterEvt = ev+1;
 							MCpptree->GetEntry_PP_Tree(formerEvt);
 							double formerTime = MCpptree->GetPPTime();
 							//std::cout<<"Former events to entry: " <<formerEvt <<", event: "<< MCpptree->GetPPEvent() <<std::endl;
 							int formerCount = 0;
-							while (formerEvt>=0 && (formerTime-StartTime)<0 && (formerTime-StartTime)>-200000) {
+							while (formerEvt>=0 && (formerTime-StartTime)<0 && (formerTime-StartTime)>-300000) {
 								double formerPos = MCpptree->GetPPY();
 								double formerPSD = MCpptree->GetPPPSD();
 								int formerSeg = MCpptree->GetPPSegment();
 								double formerE = MCpptree->GetPPEnergy();
-								std::cout << "Reading entry: "<<formerEvt <<", event No. " << MCpptree->GetPPEvent() << ", energy: " << formerE << " MeV, PSD: " << formerPSD << ", Segment: " << (formerSeg) << ", Y: " << std::abs(StartPos-formerPos) <<", Time: " << formerTime<< ", Time Diff: " << ((formerTime-StartTime)/1000) <<" \n";
+								//std::cout << "Reading entry: "<<formerEvt <<", event No. " << MCpptree->GetPPEvent() << ", energy: " << formerE << " MeV, PSD: " << formerPSD << ", Segment: " << (formerSeg) << ", Y: " << std::abs(StartPos-formerPos) <<", Time: " << formerTime<< ", Time Diff: " << ((formerTime-StartTime)/1000) <<" \n";
 								if (formerSeg == Segment && std::abs(StartPos-formerPos) < 50 && formerPSD > 0 && formerPSD < PSDGMax0 && formerE > ENoise && formerE<10 ) {
 									hTime0->Fill((formerTime-StartTime)/1000);
 									formerCount += 1;
@@ -186,29 +185,79 @@ int main(int argc, char** argv){
 									MCpptree->GetEntry_PP_Tree(formerEvt);
 									formerTime = MCpptree->GetPPTime();
 							}
-							std::cout<<"Former event number: "<< formerCount << std::endl;	
+							//std::cout<<"Former event number: "<< formerCount << std::endl;	
 
 							MCpptree->GetEntry_PP_Tree(latterEvt);
 							double latterTime = MCpptree->GetPPTime();
 							//std::cout<<"Latter events:"<<std::endl;
 							int latterCount = 0;
-							while ((latterTime-StartTime)>0 && (latterTime-StartTime)<200000) {
+							while ((latterTime-StartTime)>0 && (latterTime-StartTime)<300000) {
 								double latterPos = MCpptree->GetPPY();
 								double latterPSD = MCpptree->GetPPPSD();
 								int latterSeg = MCpptree->GetPPSegment();
 								double latterE = MCpptree->GetPPEnergy();
-								std::cout << "Reading entry: "<<latterEvt <<", event No. " << MCpptree->GetPPEvent() << ", energy: " << latterE << " MeV, PSD: " << latterPSD << ", Segment: " << (latterSeg) << ", Y: " << std::abs(StartPos-latterPos) <<", Time: " << latterTime<< ", Time Diff: " << ((latterTime-StartTime)/1000) <<" \n";
+								//std::cout << "Reading entry: "<<latterEvt <<", event No. " << MCpptree->GetPPEvent() << ", energy: " << latterE << " MeV, PSD: " << latterPSD << ", Segment: " << (latterSeg) << ", Y: " << std::abs(StartPos-latterPos) <<", Time: " << latterTime<< ", Time Diff: " << ((latterTime-StartTime)/1000) <<" \n";
 								if (latterSeg == Segment && std::abs(StartPos-latterPos) < 50 && latterPSD > 0 && latterPSD < PSDGMax0 && latterE > ENoise && latterE< 10)  {
 									hTime0->Fill((latterTime-StartTime)/1000);
+									hEGamma0->Fill(latterE);
+									hYGamma0->Fill(latterPos);
 									latterCount += 1;
 								}
 									latterEvt = latterEvt+1;
 									MCpptree->GetEntry_PP_Tree(latterEvt);
 									latterTime = MCpptree->GetPPTime();
 							}
-							std::cout<<"Latter event number: "<< latterCount << std::endl;	
-							
-					//if (Segment == 1 && PSD > PSDGMax1) hELi1->Fill(Energy);
+							//std::cout<<"Latter event number: "<< latterCount << std::endl;		
+						}
+					if (Segment == 1 && PSD > PSDGMax1) {
+						
+						double StartTime = Time;																				//Find time of the nuclear recoil;
+						double StartPos = YPos;																				//Find position of the nuclear recoil;
+						if (std::abs(StartPos)>455) continue;
+						//std::cout << "Reading entry: "<<ev <<", event No. " << Event << ", energy: " << Energy<< " MeV, PSD: " << PSD << ", Segment: " << Segment << ", Y: " << YPos <<", Time: " << Time<< " \n";
+						int formerEvt = ev-1;
+						int latterEvt = ev+1;
+						MCpptree->GetEntry_PP_Tree(formerEvt);
+						double formerTime = MCpptree->GetPPTime();
+						//std::cout<<"Former events to entry: " <<formerEvt <<", event: "<< MCpptree->GetPPEvent() <<std::endl;
+						int formerCount = 0;
+						while (formerEvt>=0 && (formerTime-StartTime)<0 && (formerTime-StartTime)>-300000) {
+							double formerPos = MCpptree->GetPPY();
+							double formerPSD = MCpptree->GetPPPSD();
+							int formerSeg = MCpptree->GetPPSegment();
+							double formerE = MCpptree->GetPPEnergy();
+							//std::cout << "Reading entry: "<<formerEvt <<", event No. " << MCpptree->GetPPEvent() << ", energy: " << formerE << " MeV, PSD: " << formerPSD << ", Segment: " << (formerSeg) << ", Y: " << std::abs(StartPos-formerPos) <<", Time: " << formerTime<< ", Time Diff: " << ((formerTime-StartTime)/1000) <<" \n";
+							if (formerSeg == Segment && std::abs(StartPos-formerPos) < 50 && formerPSD > 0 && formerPSD < PSDGMax0 && formerE > ENoise && formerE<10 ) {
+								hTime1->Fill((formerTime-StartTime)/1000);
+								formerCount += 1;
+							}
+								
+								formerEvt = formerEvt-1;
+								MCpptree->GetEntry_PP_Tree(formerEvt);
+								formerTime = MCpptree->GetPPTime();
+						}
+						//std::cout<<"Former event number: "<< formerCount << std::endl;	
+
+						MCpptree->GetEntry_PP_Tree(latterEvt);
+						double latterTime = MCpptree->GetPPTime();
+						//std::cout<<"Latter events:"<<std::endl;
+						int latterCount = 0;
+						while ((latterTime-StartTime)>0 && (latterTime-StartTime)<300000) {
+							double latterPos = MCpptree->GetPPY();
+							double latterPSD = MCpptree->GetPPPSD();
+							int latterSeg = MCpptree->GetPPSegment();
+							double latterE = MCpptree->GetPPEnergy();
+								//std::cout << "Reading entry: "<<latterEvt <<", event No. " << MCpptree->GetPPEvent() << ", energy: " << latterE << " MeV, PSD: " << latterPSD << ", Segment: " << (latterSeg) << ", Y: " << std::abs(StartPos-latterPos) <<", Time: " << latterTime<< ", Time Diff: " << ((latterTime-StartTime)/1000) <<" \n";
+							if (latterSeg == Segment && std::abs(StartPos-latterPos) < 50 && latterPSD > 0 && latterPSD < PSDGMax0 && latterE > ENoise && latterE< 10)  {
+								hTime1->Fill((latterTime-StartTime)/1000);
+								hEGamma1->Fill(latterE);
+								hYGamma1->Fill(latterPos);
+								latterCount += 1;
+							}
+								latterEvt = latterEvt+1;
+								MCpptree->GetEntry_PP_Tree(latterEvt);
+								latterTime = MCpptree->GetPPTime();
+						}
 					}
 				}
 			}
@@ -217,10 +266,11 @@ int main(int argc, char** argv){
 		TFile* gInputFile = TFile::Open(InputFile.c_str());
 		TVectorD* vRunTime = (TVectorD*)gInputFile->Get("runtime");
 		PhysPulseRunTime += (*vRunTime)[0];
+		gInputFile->Close();
 		delete MCpptree;
 	}
-
-	std::cout << "Total run time is "<< PhysPulseRunTime << "s.. \n";
+	
+	std::cout << "Total run time is "<< PhysPulseRunTime/3600 << "hr.. \n";
 
 	TFile* gOutputFile = TFile::Open(OutputFile.c_str(), "RECREATE");
 	hEGammaTot->Sumw2();
@@ -247,6 +297,7 @@ int main(int argc, char** argv){
 	hELi0->Write();
 	hELi1->Write();
 	hTime0->Write();
+	hTime1->Write();
 	//hENCap0->Write();
 	//hENCap1->Write();
 
